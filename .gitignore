@@ -1,0 +1,37 @@
+# Python Virtualenv directories and files
+bin/
+lib/
+pyvenv.cfg
+share/
+etc/
+
+# Testing directories and files. 
+## Model filetypes
+**.xml
+**.bin
+**.h5
+# **.pt
+**.tflite
+**.onnx
+**.trt
+
+## Zip files
+**.zip
+
+## Python excess directories and files
+**__pycache__/
+**.ipynb_checkpoints
+
+# Miscellaneous Files
+## Image Files
+# **.png
+**.jpg
+**.tif
+**.tiff
+# **.json
+
+## Obfuscated Code
+**/dist/
+
+## API Server Files
+ServerFiles/

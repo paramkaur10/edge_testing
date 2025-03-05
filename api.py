@@ -1,10 +1,16 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Depends
+from fastapi import Security, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import APIKeyHeader
 import subprocess
 import os
 import json
 from pathlib import Path
+
+import asyncio
+
+from auth import get_user
 
 app = FastAPI()
 
@@ -26,9 +32,54 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
 
+async def runCloudZero():
+    '''
+    Running cloudzero through a sub-process command.
+    '''
+    result = subprocess.run(
+        ["python3", str(SCRIPT_DIR / "orbitfy_cloudzero_executor.py"), CONFIG_FILE],
+        cwd=SCRIPT_DIR,  # Set working directory to the scripts folder
+        capture_output=True,
+        text=True,
+    )
+    pass
+
+@app.post("/secure")
+async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(...)):
+    '''
+    Function to check if the API Token authtentication works.
+    '''
+    user = get_user(api_key)
+    print(timeout)
+    print(type(timeout))
+
+    import random
+    async def long_running_task():
+        await asyncio.sleep(5)  # sleep for 10 seconds
+        return random.random()  # return a random number
+        pass
+
+
+    cache = {"result" : random.random()}
+    try:
+        result = await asyncio.wait_for(long_running_task(), timeout=timeout)  # timeout after five seconds of waiting
+        cache["result"] = result  # cache the result
+        response = {"message": result, "cache": False, "model_file" : model_file}
+        status = 200
+        return response
+    except Exception as e:
+        response = {"error" : "A timeout error occured", "timeout" : timeout, "model_file" : model_file}
+        status = 504
+        pass
+
+    return JSONResponse(content=response, status_code=status)
+    pass
+
 @app.post("/run-inference/")
 async def run_inference(
+    timeout: int,
     model_file: UploadFile = File(...),
+    api_key: str | None = None,
 ):
     """
     Uploads a model file, runs orbitfy_cloudzero_executor.py, and returns all outputs.
@@ -39,19 +90,22 @@ async def run_inference(
         - Paths to segmentation mask
         - Logs and JSON reports
     """
+
+    user = get_user(api_key)
+    timeout = int(timeout)
+
     try:
         # Save uploaded model file to 'uploaded_files'
         model_path = UPLOAD_DIR / model_file.filename
         with open(model_path, "wb") as mf:
             mf.write(await model_file.read())
 
-        # Run Orbitfy Executor (orbitfy_cloudzero_executor.py)
-        result = subprocess.run(
-            ["python3", str(SCRIPT_DIR / "orbitfy_cloudzero_executor.py"), CONFIG_FILE],
-            cwd=SCRIPT_DIR,  # Set working directory to the scripts folder
-            capture_output=True,
-            text=True,
-        )
+        try:
+            result = await asyncio.wait_for(runCloudZero(), timeout=timeout)
+        except Exception as e:
+            return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},
+                                status_code=504)
+            pass
 
         # Check if execution failed
         if result.returncode != 0:
