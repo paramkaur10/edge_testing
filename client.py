@@ -9,6 +9,8 @@ def createRequest(config_filepath, timeout_increase=2):
 
     In case of a timeout error, the time taken for execution will be increased by a factor specified in timeout_increase.
 
+    A maximum of 20 minutes (1200 seconds) is the maximum time provided for the API connection. If the timeout increases beyond 1200 seconds, the client will stop.
+
     Input Parameters:
         1. config_filepath  => Path to the configuration file.
         2. timeout_increase => Factor by which to increase the timeout time.
@@ -49,7 +51,7 @@ def createRequest(config_filepath, timeout_increase=2):
             print("Check error message. Error response is passed as default return for this function")
         pass
 
-    return {"error" : "Process took more than 20 minutes to run.", "result":response.json(), "code" : response.status_code}
+    return {"error" : "Process took more than 20 minutes to run or failed.", "result":response.json(), "code" : response.status_code}
     pass
 
 if __name__ == "__main__":

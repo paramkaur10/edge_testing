@@ -51,6 +51,30 @@ The above step will create a folder called _ServerFiles_, which will contain two
 
 The text files are to be shared with the client. The JSON files are not to be shared at all.
 
+### For the Client
+#### Creating the Configuration File
+A client/user will have to create a configuration file under the folder _configs_ for the `client.py` python program. The fields are explained below
+
+1. `url` : The API endpoint including the port number
+2. `params` : Contains the parameters for the API
+  1. `api_key` : Client's provided API token.
+  2. `timeout` : Number of seconds after which the API connection will timeout.
+3. `model_filepath` : Path to the model to be used by the API.
+
+#### Running the client program
+There are two ways for the client to run the program, from the command line and from a function call.
+
+1. Command line : `python client.py --config_file <path_to_config_file>`
+
+2. Function Call : `client.createRequest(config_filepath, timeout_increase=2)`
+
+The program will return the JSON of the response from the API if there are no errors. If the API key is wrong, a 403 along with the corresponding JSON will be returned.
+
+In case of 504, timeout, the program will automatically increase the timeout time by a factor specified in `timeout_increase` parameter. There is a hardstop at 1200 seconds (20 minutes).
+
+In case of no error, a 200 status code and the JSON response will be returned.
+
+In case of any other error, the corresponding error code and JSON response will be returned. 
 
 ### Running the API
 
@@ -69,6 +93,7 @@ Uploads a single model file and runs inference.
 - **Request**:
   - `model_file`: File to be uploaded (e.g., a complete model file).
   - `api_key` : Parameter containing the API Token for authentication.
+  - `timeout` : Parameter to decide when to terminate the API connection in seconds
 
   Example `cURL` command (from Client):
   ```bash
