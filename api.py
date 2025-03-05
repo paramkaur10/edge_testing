@@ -50,8 +50,6 @@ async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(
     Function to check if the API Token authtentication works.
     '''
     user = get_user(api_key)
-    print(timeout)
-    print(type(timeout))
 
     import random
     async def long_running_task():
@@ -64,11 +62,11 @@ async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(
     try:
         result = await asyncio.wait_for(long_running_task(), timeout=timeout)  # timeout after five seconds of waiting
         cache["result"] = result  # cache the result
-        response = {"message": result, "cache": False, "model_file" : model_file}
+        response = {"message": result, "cache": False}
         status = 200
         return response
     except Exception as e:
-        response = {"error" : "A timeout error occured", "timeout" : timeout, "model_file" : model_file}
+        response = {"error" : "A timeout error occured", "timeout" : timeout}
         status = 504
         pass
 
