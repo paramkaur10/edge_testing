@@ -30,20 +30,35 @@ This project provides a FastAPI-based API to upload a single model file, run an 
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies:
+3. Install dependencies (Server Side):
    ```bash
-   pip install -r requirements.txt
+   pip install -r server-requirements.txt
    ```
 
+4. Install dependencies (Client Side):
+    ```bash
+    pip install -r client-requirements.txt
+    ```
+
 ## Usage
+
+### Creating an API Token
+This step is necessary before starting a fresh server. After a fresh server, this command is only used for adding new users.
+
+`python createauthtoken.py --username <user_name>`
+
+The above step will create a folder called _ServerFiles_, which will contain two JSON files, *apikeys.json* and *serverusers.json*, and text files corresponding to the user name(s) provided which will contain the API auth token. 
+
+The text files are to be shared with the client. The JSON files are not to be shared at all.
+
 
 ### Running the API
 
 1. Start the FastAPI server:
    ```bash
-   uvicorn api:app --reload
+   uvicorn api:app --reload --reload-include *.json --port 9000
    ```
-   The API will be available at `http://127.0.0.1:8000`.
+   The API will be available at `http://127.0.0.1:9000`.
 
 ### API Endpoint
 
@@ -53,6 +68,7 @@ Uploads a single model file and runs inference.
 
 - **Request**:
   - `model_file`: File to be uploaded (e.g., a complete model file).
+  - `api_key` : Parameter containing the API Token for authentication.
 
   Example `cURL` command (from Client):
   ```bash
