@@ -4,6 +4,7 @@ lib/
 pyvenv.cfg
 share/
 etc/
+ServerFiles/
 
 # Testing directories and files. 
 ## Model filetypes
