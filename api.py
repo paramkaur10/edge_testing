@@ -8,6 +8,8 @@ import os
 import json
 from pathlib import Path
 
+import torch
+
 import asyncio
 
 from auth import get_user
@@ -31,25 +33,46 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Serve static files (for masks, logs, reports, etc.)
 app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
-
-async def runCloudZero():
+async def runCloudZero(model_path):
     '''
-    Running cloudzero through a sub-process command.
-    '''
+    Running CloudZero model through this function.
+    ''' 
 
-    proc = await asyncio.create_subprocess_shell(f"cd {ORBITFY_DIR}; python3 -m scripts.orbitfy_cloudzero_executor",stderr=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE)
-    # result = subprocess.run(
-    #     ["python -m", f"scripts.{orbitfy_cloudzero_executor}", CONFIG_FILE],
-    #     cwd=ORBITFY_DIR,  # Set working directory to the scripts folder
-    #     capture_output=True,
-    #     text=True,
-    # )
+    print("[INFO Model Loading] Loading the model")
 
-    result = await proc.communicate()
+    model = torch.load(model_path)
 
-    print(proc)
-    print(result)
-    return proc.returncode, result
+    model.eval()
+
+    gpu_available = torch.cuda.is_available()
+
+    if device_preference == "GPU" and gpu_available:
+        device = torch.device('cuda')
+        try:
+            model.to(device)
+            model_device = "GPU"
+        except Exception as e:
+            summary_logger.warning(f"CUDA is available, but model could not be moved to GPU: {e}")
+            device = torch.device('cpu')
+            model_device = "CPU"
+    elif device_preference == "GPU" and not gpu_available:
+        summary_logger.warning("GPU requested but CUDA is not available. Falling back to CPU.")
+        device = torch.device('cpu')
+        model_device = "CPU"
+    elif device_preference == "CPU":
+        device = torch.device('cpu')
+        model_device = "CPU"
+    else:
+        summary_logger.warning(f"Invalid device preference '{device_preference}'. Defaulting to CPU.")
+        device = torch.device('cpu')
+        model_device = "CPU"
+        pass
+
+    # result = await proc.communicate()
+
+    # print(proc)
+    # print(result)
+    return 1, "Successful model loading"
     pass
 
 @app.post("/secure")
@@ -107,7 +130,7 @@ async def run_inference(
             mf.write(await model_file.read())
 
         try:
-            result_returncode, result = await asyncio.wait_for(runCloudZero(), timeout=timeout)
+            result_returncode, result = await asyncio.wait_for(runCloudZero(model_path=model_path), timeout=timeout)
             print(result_returncode)
         except Exception as e:
             return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},
