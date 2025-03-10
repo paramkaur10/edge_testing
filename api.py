@@ -36,14 +36,21 @@ async def runCloudZero():
     '''
     Running cloudzero through a sub-process command.
     '''
-    result = subprocess.run(
-        ["python -m", f"scripts.{orbitfy_cloudzero_executor}", CONFIG_FILE],
-        cwd=ORBITFY_DIR,  # Set working directory to the scripts folder
-        capture_output=True,
-        text=True,
-    )
 
-    return result
+    proc = asyncio asyncio.create_subprocess_shell(f"ch {ORBITFY_DIR} python3 -m scripts.orbitfy_cloudzerp_executor",  stderr=asyncio.subprocess.PIPE,
+          stdout=asyncio.subprocess.PIPE)
+    # result = subprocess.run(
+    #     ["python -m", f"scripts.{orbitfy_cloudzero_executor}", CONFIG_FILE],
+    #     cwd=ORBITFY_DIR,  # Set working directory to the scripts folder
+    #     capture_output=True,
+    #     text=True,
+    # )
+
+    result = await proc.communicate()
+
+    print(proc)
+    print(result)
+    return proc
     pass
 
 @app.post("/secure")
