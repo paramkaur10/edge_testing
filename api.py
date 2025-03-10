@@ -53,18 +53,18 @@ async def runCloudZero(model_path, device_preference="GPU"):
             model_device = "GPU"
             print("[INFO Model Loading] Model loaded to the GPU.")
         except Exception as e:
-            summary_logger.warning(f"CUDA is available, but model could not be moved to GPU: {e}")
+            print(f"[WARNING Model Loading] CUDA is available, but model could not be moved to GPU: {e}")
             device = torch.device('cpu')
             model_device = "CPU"
     elif device_preference == "GPU" and not gpu_available:
-        summary_logger.warning("GPU requested but CUDA is not available. Falling back to CPU.")
+        print("[WARNING Model Loading] GPU requested but CUDA is not available. Falling back to CPU.")
         device = torch.device('cpu')
         model_device = "CPU"
     elif device_preference == "CPU":
         device = torch.device('cpu')
         model_device = "CPU"
     else:
-        summary_logger.warning(f"Invalid device preference '{device_preference}'. Defaulting to CPU.")
+        print(f"[WARNING Model Loading] Invalid device preference '{device_preference}'. Defaulting to CPU.")
         device = torch.device('cpu')
         model_device = "CPU"
         pass
@@ -178,8 +178,6 @@ async def run_inference(
             "segmentation_masks": mask_files,
             "json_reports": json_reports,
             "logs": log_files,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
         }
 
         return JSONResponse(content=response_data, status_code=200)
