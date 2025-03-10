@@ -41,11 +41,11 @@ def createRequest(config_filepath, timeout_increase=2):
             break
         elif response.status_code == 504:
             
-            print(response.json())
+            # print(response.json())
             params["timeout"] *= timeout_increase
         elif response.status_code == 200:
 
-            print(response.json())
+            # print(response.json())
             return response.json()
         else:
             print("Check error message. Error response is passed as default return for this function")
