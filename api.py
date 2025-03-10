@@ -73,7 +73,7 @@ async def runCloudZero(model_path, device_preference="GPU"):
 
     # print(proc)
     # print(result)
-    return 1, "Successful model loading"
+    return 0, "Successful model loading"
     pass
 
 @app.post("/secure")
@@ -141,7 +141,7 @@ async def run_inference(
         # Check if execution failed
         if result_returncode != 0:
             return JSONResponse(
-                content={"error": "Execution failed", "details": result.stderr},
+                content={"error": "Execution failed", "details": result},
                 status_code=500,
             )
 
@@ -177,7 +177,7 @@ async def run_inference(
             "confidence_percentage": confidence_score,
             "segmentation_masks": mask_files,
             "json_reports": json_reports,
-            "logs": log_files,
+            "logs": log_files
         }
 
         return JSONResponse(content=response_data, status_code=200)
