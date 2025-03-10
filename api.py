@@ -33,7 +33,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Serve static files (for masks, logs, reports, etc.)
 app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
-async def runCloudZero(model_path):
+async def runCloudZero(model_path, device_preference="GPU"):
     '''
     Running CloudZero model through this function.
     ''' 
@@ -51,6 +51,7 @@ async def runCloudZero(model_path):
         try:
             model.to(device)
             model_device = "GPU"
+            print("[INFO Model Loading] Model loaded to the GPU.")
         except Exception as e:
             summary_logger.warning(f"CUDA is available, but model could not be moved to GPU: {e}")
             device = torch.device('cpu')
