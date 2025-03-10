@@ -37,8 +37,7 @@ async def runCloudZero():
     Running cloudzero through a sub-process command.
     '''
 
-    proc = asyncio asyncio.create_subprocess_shell(f"ch {ORBITFY_DIR} python3 -m scripts.orbitfy_cloudzerp_executor",  stderr=asyncio.subprocess.PIPE,
-          stdout=asyncio.subprocess.PIPE)
+    proc = await asyncio.create_subprocess_shell(f"ch {ORBITFY_DIR} python3 -m scripts.orbitfy_cloudzero_executor",stderr=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE)
     # result = subprocess.run(
     #     ["python -m", f"scripts.{orbitfy_cloudzero_executor}", CONFIG_FILE],
     #     cwd=ORBITFY_DIR,  # Set working directory to the scripts folder
@@ -50,7 +49,7 @@ async def runCloudZero():
 
     print(proc)
     print(result)
-    return proc
+    return proc.returncode, result
     pass
 
 @app.post("/secure")
@@ -108,14 +107,15 @@ async def run_inference(
             mf.write(await model_file.read())
 
         try:
-            result = await asyncio.wait_for(runCloudZero(), timeout=timeout)
+            result_returncode, result = await asyncio.wait_for(runCloudZero(), timeout=timeout)
+            print(result_returncode)
         except Exception as e:
             return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},
                                 status_code=504)
             pass
 
         # Check if execution failed
-        if result.returncode != 0:
+        if result_returncode != 0:
             return JSONResponse(
                 content={"error": "Execution failed", "details": result.stderr},
                 status_code=500,
