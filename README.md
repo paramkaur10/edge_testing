@@ -80,9 +80,15 @@ In case of any other error, the corresponding error code and JSON response will 
 
 1. Start the FastAPI server:
    ```bash
-   uvicorn api:app --reload --reload-include *.json --port 9000
+   uvicorn api:app --reload --reload-include *.json --port 9000 --host 0.0.0.0
    ```
-   The API will be available at `http://127.0.0.1:9000`.
+
+   For MAC Users, use the following command : 
+   ```bash
+   uvicorn api:app --reload --reload-include "*.json" --port 9000 --host 0.0.0.0
+   ```
+
+   The API will be available at `http://0.0.0.0:9000`.
 
 ### API Endpoint
 

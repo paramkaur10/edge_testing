@@ -1,5 +1,5 @@
 {
-    "url" : "http://127.0.0.1:9000/secure/",
-    "params" : {"api_key" : "XlWfvzLdzRP2Ccrx2De5wg", "timeout" : 4},
+    "url" : "http://orin.littleplace.dev:9000/secure/",
+    "params" : {"api_key" : "", "timeout" : 4},
     "model_filepath" : "uploaded_files/orbitfy-cloudzero-ml-model-v1.1.1.pt"
 }

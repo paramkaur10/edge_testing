@@ -29,7 +29,7 @@ def createRequest(config_filepath, timeout_increase=2):
     api_endpoint = contents["url"]
     params = contents["params"]
     model_filepath = os.path.abspath(contents["model_filepath"])
-    model_files = {"model_file" : (model_filepath, open(model_filepath, "rb"))} 
+    model_files = {"model_file" : (os.path.basename(model_filepath), open(model_filepath, "rb"))} 
 
     while params["timeout"] <1200:
 
@@ -45,10 +45,11 @@ def createRequest(config_filepath, timeout_increase=2):
             params["timeout"] *= timeout_increase
         elif response.status_code == 200:
 
-            # print(response.json())
+            print(response.json())
             return response.json()
         else:
             print("Check error message. Error response is passed as default return for this function")
+            break
         pass
 
     return {"error" : "Process took more than 20 minutes to run or failed.", "result":response.json(), "code" : response.status_code}
@@ -60,5 +61,5 @@ if __name__ == "__main__":
                     help="Path to the config file")
     args = vars(ap.parse_args())
 
-    createRequest(config_filepath=args["config_file"])
+    print(createRequest(config_filepath=args["config_file"]))
     pass

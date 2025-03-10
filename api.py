@@ -37,11 +37,13 @@ async def runCloudZero():
     Running cloudzero through a sub-process command.
     '''
     result = subprocess.run(
-        ["python3", str(SCRIPT_DIR / "orbitfy_cloudzero_executor.py"), CONFIG_FILE],
-        cwd=SCRIPT_DIR,  # Set working directory to the scripts folder
+        ["python -m", f"scripts.{orbitfy_cloudzero_executor}", CONFIG_FILE],
+        cwd=ORBITFY_DIR,  # Set working directory to the scripts folder
         capture_output=True,
         text=True,
     )
+
+    return result
     pass
 
 @app.post("/secure")
@@ -76,8 +78,8 @@ async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(
 @app.post("/run-inference/")
 async def run_inference(
     timeout: int,
+    api_key: str,
     model_file: UploadFile = File(...),
-    api_key: str | None = None,
 ):
     """
     Uploads a model file, runs orbitfy_cloudzero_executor.py, and returns all outputs.
