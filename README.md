@@ -21,19 +21,20 @@ This project provides a FastAPI-based API to upload a single model file, run an 
 1. Clone the repository:
    ```bash
    git clone git@github.com:LittlePlaceLabs/lpl-PyNas-EdgeTesting.git
-   cd API
    ```
 
 2. Set up a virtual environment and activate it (or use miniconda):
    ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   virtualenv -p `which python` lpl-PyNas-EdgeTesting
+   cd lpl-PyNas-EdgeTesting
+   source bin/activate  # On Windows: Scripts\activate
    ```
 
 3. Install dependencies (Server Side):
    ```bash
-   pip install -r server-requirements.txt
+   pip install -r requirements.txt
    ```
+   1. For different edge devices install the required requirements.txt files present under EdgeDeviceRequirements. An example is provided as follows : `pip install -r EdgeDeviceRequirements/orin-requirements.txt` for the Orin board.
 
 4. Install dependencies (Client Side):
     ```bash
