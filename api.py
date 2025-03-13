@@ -7,10 +7,10 @@ import subprocess
 import os
 import json
 from pathlib import Path
-import glob as glob
+from glob import glob 
 
 import torch
-
+import numpy as np
 import asyncio
 
 from auth import get_user
@@ -34,12 +34,8 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Serve static files (for masks, logs, reports, etc.)
 app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
-async def runInference(model_path, device_preference="GPU"):
-    '''
-    Running uploaded inference model through this function.
-    ''' 
-
-    print("[INFO Model Loading] Loading the model")
+def load_model(model_path: str,device_preference: str="GPU"):
+    assert os.path.exists(model_path)
 
     model = torch.load(model_path)
     model.eval()
@@ -49,24 +45,79 @@ async def runInference(model_path, device_preference="GPU"):
         device = torch.device('cuda')
         try:
             model.to(device)
-            model_device = "GPU"
+            model_device = "cuda"
             print("[INFO Model Loading] Model loaded to the GPU.")
         except Exception as e:
             print(f"[WARNING Model Loading] CUDA is available, but model could not be moved to GPU: {e}")
             device = torch.device('cpu')
-            model_device = "CPU"
+            model_device = "cpu"
     elif device_preference == "GPU" and not gpu_available:
         print("[WARNING Model Loading] GPU requested but CUDA is not available. Falling back to CPU.")
         device = torch.device('cpu')
-        model_device = "CPU"
+        model_device = "cpu"
     elif device_preference == "CPU":
         device = torch.device('cpu')
-        model_device = "CPU"
+        model_device = "cpu"
     else:
         print(f"[WARNING Model Loading] Invalid device preference '{device_preference}'. Defaulting to CPU.")
         device = torch.device('cpu')
-        model_device = "CPU"
+        model_device = "cpu"
+    return model, model_device
 
+async def runInference(model_path, device_preference="GPU"):
+    '''
+    Running uploaded inference model through this function.
+    ''' 
+
+    print("[INFO Model Loading] Loading the model")
+
+    model, model_device = load_model(model_path, device_preference)
+
+    # this is subject to change depending on model subject, but hardcoded for now 
+    test_dir = '/home/PyNasResearch/test_dataset' 
+    test_images_path = os.path.join(test_dir,'numpy_images')
+    # test_masks_path = os.path.join(test_dir,'numpy_masks')
+    
+    # open images and masks 
+    preprocessed_image_files = glob(f'{test_images_path}/*.npy')
+
+    # get test data images and masks
+    preprocessed_image_files = glob(f'{test_images_path}/*.npy')
+    # preprocessed_mask_files = glob(f'{test_masks_path}/*.npy')
+    image_tiles = []
+    mask_tiles = []
+    for pi in preprocessed_image_files:
+        pm = pi.replace('image','mask')
+        assert os.path.exists(pi) and os.path.exists(mask)
+        image_tiles.append(np.load(pi))
+        mask_tiles.append(np.load(pm))
+    
+    
+    # run inference 
+    predicted_tiles = []
+    for tile in tqdm(image_tiles):
+        # Convert the tile to a tensor and add batch dimension
+        tile_tensor = torch.tensor(tile).float().permute(2, 0, 1).unsqueeze(0).to(model_device)  
+        
+        # Model prediction
+        with torch.no_grad():
+            logits = model(tile_tensor)
+            # Apply softmax to get probabilities
+            probabilities = F.softmax(logits, dim=1)
+            # Get the predicted class by using argmax
+            prediction = torch.argmax(probabilities, dim=1)  # Should result in shape [batch_size, height, width]
+        # Remove the batch dimension and convert back to numpy
+        prediction = prediction.squeeze(0).to('cpu').numpy()
+        
+        # Append the prediction to the list of predicted tiles
+        predicted_tiles.append(prediction)
+
+    result_path = os.path.join(test_dir,'result.json')
+    
+    result = {'accuracy':,'latency':}
+    with open(result_path,'w') as file:
+        json.dump(result, file, indent=4)
+    
     # result = await proc.communicate()
 
     # print(proc)
