@@ -7,6 +7,7 @@ import subprocess
 import os
 import json
 from pathlib import Path
+import glob as glob
 
 import torch
 
@@ -33,19 +34,17 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # Serve static files (for masks, logs, reports, etc.)
 app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
-async def runCloudZero(model_path, device_preference="GPU"):
+async def runInference(model_path, device_preference="GPU"):
     '''
-    Running CloudZero model through this function.
+    Running uploaded inference model through this function.
     ''' 
 
     print("[INFO Model Loading] Loading the model")
 
     model = torch.load(model_path)
-
     model.eval()
 
     gpu_available = torch.cuda.is_available()
-
     if device_preference == "GPU" and gpu_available:
         device = torch.device('cuda')
         try:
@@ -67,7 +66,6 @@ async def runCloudZero(model_path, device_preference="GPU"):
         print(f"[WARNING Model Loading] Invalid device preference '{device_preference}'. Defaulting to CPU.")
         device = torch.device('cpu')
         model_device = "CPU"
-        pass
 
     # result = await proc.communicate()
 
