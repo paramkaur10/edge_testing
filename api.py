@@ -11,6 +11,7 @@ from glob import glob
 import time
 
 import torch
+import torch.nn.functional as F
 import numpy as np
 import asyncio
 
@@ -26,11 +27,11 @@ CONFIG_FILE = ORBITFY_DIR / "config/cloudzero-config-template.json"
 
 # I/O Directories
 UPLOAD_DIR = BASE_DIR / "uploaded_files"
-OUTPUT_DIR = ORBITFY_DIR / "outbox/outbox-rt-cloudzero"  # Where results are saved
+# OUTPUT_DIR = ORBITFY_DIR / "outbox/outbox-rt-cloudzero"  # Where results are saved
 
 # Ensure directories exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Serve static files (for masks, logs, reports, etc.)
 app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
@@ -96,7 +97,7 @@ async def runInference(model_path, device_preference="GPU"):
     # run inference 
     inf_start_time = time.time()
     predicted_tiles = []
-    for tile in tqdm(image_tiles):
+    for tile in image_tiles:
         # Convert the tile to a tensor and add batch dimension
         tile_tensor = torch.tensor(tile).float().permute(2, 0, 1).unsqueeze(0).to(model_device)  
         
@@ -115,18 +116,22 @@ async def runInference(model_path, device_preference="GPU"):
 
     inf_end_time = time.time()
     inference_time = inf_end_time - inf_start_time
-    fps = inference_time / len(preprocessed_image_files)
+    fps = len(preprocessed_image_files) / inference_time
 
     # calculate iou from the second here 
     ious = []
-    for i,x in enumerate(predicted_tiles):
-        ba_pred = x[1]
-        ba_mask = mask_tiles[i][1]
-        intersection = ba_pred * ba_mask
-        union = ba_pred + ba_mask
-        iou = intersection.count() / union.count()
+    for i,ba_pred in enumerate(predicted_tiles):
+        ba_pred = ba_pred.copy().astype(int)  # Make a copy to avoid modifying original data
+        ba_pred[ba_pred > 1] = 0
+        ba_mask = mask_tiles[i][:,:,1].astype(int)
+        intersection = (ba_pred * ba_mask).sum()
+        union = np.logical_or(ba_pred, ba_mask).sum()
+        if union == 0:
+            iou = np.nan
+        else:
+            iou = intersection / union
         ious.append(iou)
-    mean_iou = np.mean(ious)
+    mean_iou = np.nanmean(ious).astype(np.float32)
 
     result = {'accuracy':mean_iou,'latency': fps}
     # result_path = os.path.join(test_dir,'result.json')
@@ -190,7 +195,7 @@ async def run_inference(
             mf.write(await model_file.read())
 
         try:
-            result_returncode, result = await asyncio.wait_for(runCloudZero(model_path=model_path), timeout=timeout)
+            result_returncode, result = await asyncio.wait_for(runInference(model_path=model_path), timeout=timeout)
             print(result_returncode)
         except Exception as e:
             return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},
@@ -233,8 +238,8 @@ async def run_inference(
 
         # Prepare API response
         response_data = {
-            "confidence_percentage": confidence_score,
-            "segmentation_masks": mask_files,
+            "IoU": result['accuracy'],
+            "FPS": result['latency'],
             "json_reports": json_reports,
             "logs": log_files
         }
