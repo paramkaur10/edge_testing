@@ -8,6 +8,7 @@ import os
 import json
 from pathlib import Path
 from glob import glob 
+import time
 
 import torch
 import numpy as np
@@ -88,12 +89,12 @@ async def runInference(model_path, device_preference="GPU"):
     mask_tiles = []
     for pi in preprocessed_image_files:
         pm = pi.replace('image','mask')
-        assert os.path.exists(pi) and os.path.exists(mask)
+        assert os.path.exists(pi) and os.path.exists(pm)
         image_tiles.append(np.load(pi))
         mask_tiles.append(np.load(pm))
     
-    
     # run inference 
+    inf_start_time = time.time()
     predicted_tiles = []
     for tile in tqdm(image_tiles):
         # Convert the tile to a tensor and add batch dimension
@@ -112,18 +113,28 @@ async def runInference(model_path, device_preference="GPU"):
         # Append the prediction to the list of predicted tiles
         predicted_tiles.append(prediction)
 
-    result_path = os.path.join(test_dir,'result.json')
-    
-    result = {'accuracy':,'latency':}
-    with open(result_path,'w') as file:
-        json.dump(result, file, indent=4)
+    inf_end_time = time.time()
+    inference_time = inf_end_time - inf_start_time
+    fps = inference_time / len(preprocessed_image_files)
+
+    # calculate iou from the second here 
+    ious = []
+    for i,x in enumerate(predicted_tiles):
+        ba_pred = x[1]
+        ba_mask = mask_tiles[i][1]
+        intersection = ba_pred * ba_mask
+        union = ba_pred + ba_mask
+        iou = intersection.count() / union.count()
+        ious.append(iou)
+    mean_iou = np.mean(ious)
+
+    result = {'accuracy':mean_iou,'latency': fps}
+    # result_path = os.path.join(test_dir,'result.json')
+    # with open(result_path,'w') as file:
+    #     json.dump(result, file, indent=4)
     
     # result = await proc.communicate()
-
-    # print(proc)
-    # print(result)
-    return 0, "Successful model loading"
-    pass
+    return 0, result
 
 @app.post("/secure")
 async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(...)):
@@ -137,7 +148,6 @@ async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(
         await asyncio.sleep(5)  # sleep for 10 seconds
         return random.random()  # return a random number
         pass
-
 
     cache = {"result" : random.random()}
     try:
@@ -161,7 +171,7 @@ async def run_inference(
     model_file: UploadFile = File(...),
 ):
     """
-    Uploads a model file, runs orbitfy_cloudzero_executor.py, and returns all outputs.
+    Uploads a model file, runs inference, calculates accuracy and speed metrics, and returns mean iou and fps.
 
     Returns:
         JSON response containing:
