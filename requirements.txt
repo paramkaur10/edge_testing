@@ -39,3 +39,5 @@ gunicorn>=21.0.0,<22.0.0
 httpx>=0.24.0,<0.25.0  # For HTTP client
 python-multipart==0.0.20
 uvicron==0.34.0
+
+# install pynattas manually from the main directory with pip (`pip install .`) 
