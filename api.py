@@ -38,7 +38,6 @@ app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
 def load_model(model_path: str,device_preference: str="GPU"):
     assert os.path.exists(model_path)
-
     model = torch.load(model_path)
     model.eval()
 
@@ -134,11 +133,7 @@ async def runInference(model_path, device_preference="GPU"):
     mean_iou = np.nanmean(ious).astype(np.float32)
 
     result = {'accuracy':mean_iou,'latency': fps}
-    # result_path = os.path.join(test_dir,'result.json')
-    # with open(result_path,'w') as file:
-    #     json.dump(result, file, indent=4)
     
-    # result = await proc.communicate()
     return 0, result
 
 @app.post("/secure")
@@ -200,7 +195,6 @@ async def run_inference(
         except Exception as e:
             return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},
                                 status_code=504)
-            pass
 
         # Check if execution failed
         if result_returncode != 0:
@@ -209,42 +203,7 @@ async def run_inference(
                 status_code=500,
             )
 
-        # Collect Output Files
-        confidence_score = None
-        mask_files = []
-        json_reports = []
-        log_files = []
-
-        for file in os.listdir(OUTPUT_DIR):
-            file_path = f"/static/{file}"
-
-            if file.endswith(".png"):  # Segmentation masks
-                mask_files.append(file_path)
-
-            elif file.endswith(".json"):  # JSON reports
-                json_reports.append(file_path)
-
-                # Try to extract confidence from JSON reports
-                with open(os.path.join(OUTPUT_DIR, file), "r") as json_file:
-                    try:
-                        data = json.load(json_file)
-                        if "confidence_percentage" in data:
-                            confidence_score = data["confidence_percentage"]
-                    except json.JSONDecodeError:
-                        pass
-
-            elif file.endswith(".log"):  # Log files
-                log_files.append(file_path)
-
-        # Prepare API response
-        response_data = {
-            "IoU": result['accuracy'],
-            "FPS": result['latency'],
-            "json_reports": json_reports,
-            "logs": log_files
-        }
-
-        return JSONResponse(content=response_data, status_code=200)
+        return JSONResponse(content=result, status_code=200)
 
     except Exception as e:
         return JSONResponse(
