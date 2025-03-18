@@ -131,8 +131,9 @@ async def runInference(model_path, device_preference="GPU"):
             iou = intersection / union
         ious.append(iou)
     mean_iou = np.nanmean(ious).astype(np.float32)
-
+    
     result = {'accuracy':mean_iou,'latency': fps}
+    print(result)
     
     return 0, result
 
