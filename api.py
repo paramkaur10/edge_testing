@@ -34,7 +34,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # Serve static files (for masks, logs, reports, etc.)
-app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
+# app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
 def load_model(model_path: str,device_preference: str="GPU"):
     assert os.path.exists(model_path)
