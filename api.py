@@ -119,20 +119,34 @@ async def runInference(model_path, device_preference="GPU"):
 
     # calculate iou from the second here 
     ious = []
-    for i,ba_pred in enumerate(predicted_tiles):
-        ba_pred = ba_pred.copy().astype(int)  # Make a copy to avoid modifying original data
-        ba_pred[ba_pred > 1] = 0
-        ba_mask = mask_tiles[i][:,:,1].astype(int)
-        intersection = (ba_pred * ba_mask).sum()
-        union = np.logical_or(ba_pred, ba_mask).sum()
-        if union == 0:
-            iou = np.nan
-        else:
-            iou = intersection / union
-        ious.append(iou)
+    num_classes = len(mask_tiles[0].shape[-1])  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
+    
+    for i, pred in enumerate(predicted_tiles):
+        pred = pred.copy().astype(int)
+        mask = mask_tiles[i]
+        
+        # Calculate IoU for each class
+        class_ious = []
+        for cls in range(num_classes):
+            pred_mask = (pred == cls)
+            target_mask = (mask[:, :, cls].astype(int) if mask.shape[-1] == num_classes else mask == cls)
+            
+            intersection = (pred_mask & target_mask).sum()
+            union = (pred_mask | target_mask).sum()
+            
+            if union == 0:
+                class_iou = np.nan
+            else:
+                class_iou = intersection / union
+            class_ious.append(class_iou)
+            
+        ious.append(class_ious)
+    
+    # Calculate mean IoU across all classes and samples
+    ious = np.array(ious)  # Shape: (n_samples, n_classes)
     mean_iou = np.nanmean(ious).astype(np.float32)
     
-    result = {'accuracy':str(mean_iou),'latency': str(fps)}
+    result = {'accuracy':str(mean_iou), 'latency': str(fps)}
     print(result)
     
     return 0, result
