@@ -137,8 +137,8 @@ async def runInference(model_path, device_preference="GPU"):
             for cls in range(num_classes):
                 pred_mask = (pred == cls)
                 target_mask = (mask == cls)
-            print(pred_mask.shape)
-            print(target_mask.shape)
+                print(pred_mask.shape)
+                print(target_mask.shape)
                 print('making intersection and union')
                 intersection = np.logical_and(pred_mask, target_mask).sum()
                 union = np.logical_or(pred_mask, target_mask).sum()
