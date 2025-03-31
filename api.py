@@ -122,8 +122,12 @@ async def runInference(model_path, device_preference="GPU"):
     try:
         # calculate iou from the second here 
         ious = []
-        num_classes = len(mask_tiles[0].shape[-1])  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
-        print(mask_tiles.shape)
+        print(mask_tiles[0].shape),mask_tiles[0].shape[-1]
+        try:
+            num_classes = len(np.shape(mask_tiles[0])[-1])  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
+        except:
+            print('could not calculated above, hardcoding')
+            num_classes = 4 #len(mask_tiles[0].shape[-1])  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
         print(num_classes)
         print('calculating iou')
 
