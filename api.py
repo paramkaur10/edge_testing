@@ -104,12 +104,12 @@ async def runInference(model_path, device_preference="GPU"):
         with torch.no_grad():
             logits = model(tile_tensor)
             # Apply softmax to get probabilities
-            probabilities = F.softmax(logits, dim=1)
+            # probabilities = F.softmax(logits, dim=1)
             # Get the predicted class by using argmax
-            prediction = torch.argmax(probabilities, dim=1)  # Should result in shape [batch_size, height, width]
+            prediction = torch.argmax(logits, dim=1)  # Should result in shape [batch_size, height, width]
+
         # Remove the batch dimension and convert back to numpy
         prediction = prediction.squeeze(0).to('cpu').numpy()
-        
         # Append the prediction to the list of predicted tiles
         predicted_tiles.append(prediction)
 
@@ -126,21 +126,19 @@ async def runInference(model_path, device_preference="GPU"):
         mask = mask_tiles[i]
         
         # Calculate IoU for each class
-        class_ious = []
+        iou = []
         for cls in range(num_classes):
             pred_mask = (pred == cls)
-            target_mask = (mask[:, :, cls].astype(int) if mask.shape[-1] == num_classes else mask == cls)
+            target_mask = (mask == cls)
             
-            intersection = (pred_mask & target_mask).sum()
-            union = (pred_mask | target_mask).sum()
+            intersection = (pred_mask & target_mask).float().sum((1,2))
+            union = (pred_mask | target_mask).float().sum((1, 2))
             
-            if union == 0:
-                class_iou = np.nan
-            else:
-                class_iou = intersection / union
-            class_ious.append(class_iou)
+            iou.append((intersection + 1e-6) / (union + 1e-6))
             
-        ious.append(class_ious)
+        mean_iou = np.array(iou).mean(axis=0)  # Mean IoU across all classes
+            
+        ious.append(mean_iou)
     
     # Calculate mean IoU across all classes and samples
     ious = np.array(ious)  # Shape: (n_samples, n_classes)
