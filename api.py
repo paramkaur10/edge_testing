@@ -38,7 +38,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def load_model(model_path: str,device_preference: str="GPU"):
     assert os.path.exists(model_path)
-    model = torch.load(model_path)
+    model = torch.jit.load(model_path)
     model.eval()
 
     gpu_available = torch.cuda.is_available()
