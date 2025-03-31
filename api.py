@@ -136,7 +136,7 @@ async def runInference(model_path, device_preference="GPU"):
             print('here')
  
             for cls in range(num_classes):
-                pred_mask = pred[pred == cls]
+                pred_mask = pred == cls
                 target_mask = (mask == cls)
                 print(pred_mask.shape)
                 print(target_mask.shape)
