@@ -123,24 +123,28 @@ async def runInference(model_path, device_preference="GPU"):
     ious = []
     num_classes = len(mask_tiles[0].shape[-1])  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
     print('calculating iou')
-    for i, pred in enumerate(predicted_tiles):
-        pred = pred.copy().astype(int)
-        mask = mask_tiles[i]
-        
-        # Calculate IoU for each class
-        iou = []
-        for cls in range(num_classes):
-            pred_mask = (pred == cls)
-            target_mask = (mask == cls)
+    try:
+
+        for i, pred in enumerate(predicted_tiles):
+            pred = pred.copy().astype(int)
+            mask = mask_tiles[i]
             
-            intersection = (pred_mask & target_mask).float().sum((1,2))
-            union = (pred_mask | target_mask).float().sum((1, 2))
-            
-            iou.append((intersection + 1e-6) / (union + 1e-6))
-            
-        mean_iou = np.array(iou).mean(axis=0)  # Mean IoU across all classes
-            
-        ious.append(mean_iou)
+            # Calculate IoU for each class
+            iou = []
+            for cls in range(num_classes):
+                pred_mask = (pred == cls)
+                target_mask = (mask == cls)
+                
+                intersection = (pred_mask & target_mask).float().sum((1,2))
+                union = (pred_mask | target_mask).float().sum((1, 2))
+                
+                iou.append((intersection + 1e-6) / (union + 1e-6))
+                
+            mean_iou = np.array(iou).mean(axis=0)  # Mean IoU across all classes
+                
+            ious.append(mean_iou)
+    except:
+        print('failed to calculate this')
     print('finished calculating iou')
     # Calculate mean IoU across all classes and samples
     ious = np.array(ious)  # Shape: (n_samples, n_classes)
