@@ -134,10 +134,11 @@ async def runInference(model_path, device_preference="GPU"):
             # Calculate IoU for each class
             iou = []
             print('here')
- 
+
             for cls in range(num_classes):
-                pred_mask = pred == cls
-                target_mask = (mask == cls)
+                print(cls) 
+                pred_mask = (pred == cls)
+                target_mask = (mask[cls] == cls)
                 print(pred_mask.shape)
                 print(target_mask.shape)
                 print('making intersection and union')
