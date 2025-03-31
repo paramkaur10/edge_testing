@@ -126,7 +126,7 @@ async def runInference(model_path, device_preference="GPU"):
         num_classes = mask_tiles[0].shape[-1]  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
         print(num_classes)
         print('calculating iou')
-
+        print(np.unique(predicted_tiles))
         for i, pred in enumerate(predicted_tiles):
             pred = pred.copy().astype(int)
             mask = mask_tiles[i]
@@ -134,8 +134,9 @@ async def runInference(model_path, device_preference="GPU"):
             # Calculate IoU for each class
             iou = []
             print('here')
+ 
             for cls in range(num_classes):
-                pred_mask = (pred == cls)
+                pred_mask = pred[pred == cls]
                 target_mask = (mask == cls)
                 print(pred_mask.shape)
                 print(target_mask.shape)
