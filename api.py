@@ -73,7 +73,7 @@ async def runInference(model_path, device_preference="GPU"):
     print("[INFO Model Loading] Loading the model")
 
     model, model_device = load_model(model_path, device_preference)
-
+    print('made it to here')
     # this is subject to change depending on model subject, but hardcoded for now 
     test_dir = '/home/PyNasResearch/test_dataset' 
     test_images_path = os.path.join(test_dir,'numpy_images')
@@ -85,6 +85,7 @@ async def runInference(model_path, device_preference="GPU"):
     # get test data images and masks
     preprocessed_image_files = glob(f'{test_images_path}/*.npy')
     # preprocessed_mask_files = glob(f'{test_masks_path}/*.npy')
+    print('grabbed preprocessed images')
     image_tiles = []
     mask_tiles = []
     for pi in preprocessed_image_files:
@@ -92,8 +93,9 @@ async def runInference(model_path, device_preference="GPU"):
         assert os.path.exists(pi) and os.path.exists(pm)
         image_tiles.append(np.load(pi))
         mask_tiles.append(np.load(pm))
-    
+    print('loaded preprocessed images')
     # run inference 
+    print('starting inference')
     inf_start_time = time.time()
     predicted_tiles = []
     for tile in image_tiles:
@@ -112,15 +114,15 @@ async def runInference(model_path, device_preference="GPU"):
         prediction = prediction.squeeze(0).to('cpu').numpy()
         # Append the prediction to the list of predicted tiles
         predicted_tiles.append(prediction)
-
+    print('ran predicitons')
     inf_end_time = time.time()
     inference_time = inf_end_time - inf_start_time
     fps = len(preprocessed_image_files) / inference_time
-
+    print(f'fps {fps}')
     # calculate iou from the second here 
     ious = []
     num_classes = len(mask_tiles[0].shape[-1])  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
-    
+    print('calculating iou')
     for i, pred in enumerate(predicted_tiles):
         pred = pred.copy().astype(int)
         mask = mask_tiles[i]
@@ -139,11 +141,11 @@ async def runInference(model_path, device_preference="GPU"):
         mean_iou = np.array(iou).mean(axis=0)  # Mean IoU across all classes
             
         ious.append(mean_iou)
-    
+    print('finished calculating iou')
     # Calculate mean IoU across all classes and samples
     ious = np.array(ious)  # Shape: (n_samples, n_classes)
     mean_iou = np.nanmean(ious).astype(np.float32)
-    
+    print(mean_iou)
     result = {'accuracy':str(mean_iou), 'latency': str(fps)}
     print(result)
     
