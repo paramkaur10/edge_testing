@@ -36,6 +36,28 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Serve static files (for masks, logs, reports, etc.)
 # app.mount("/static", StaticFiles(directory=OUTPUT_DIR), name="static")
 
+
+
+def calculate_iou(logits, targets, num_classes):
+    with torch.no_grad():
+        preds = torch.argmax(logits, dim=1)  # [B, H, W]
+        ious = []
+
+        for cls in range(num_classes):
+            pred_mask = (preds == cls)
+            target_mask = (targets == cls)
+
+            intersection = (pred_mask & target_mask).float().sum(dim=(1, 2))
+            union = (pred_mask | target_mask).float().sum(dim=(1, 2))
+
+            iou = (intersection + 1e-6) / (union + 1e-6)
+            ious.append(iou)
+
+        ious = torch.stack(ious, dim=0)  # [num_classes, B]
+        mean_iou = ious.mean(dim=0).mean().item()
+        return mean_iou
+
+
 def load_model(model_path: str,device_preference: str="GPU"):
     assert os.path.exists(model_path)
     model = torch.load(model_path)
@@ -66,101 +88,53 @@ def load_model(model_path: str,device_preference: str="GPU"):
     return model, model_device
 
 async def runInference(model_path, device_preference="GPU"):
-    '''
-    Running uploaded inference model through this function.
-    ''' 
-
     print("[INFO Model Loading] Loading the model")
-
     model, model_device = load_model(model_path, device_preference)
-    print('made it to here')
-    # this is subject to change depending on model subject, but hardcoded for now 
-    test_dir = '/home/PyNasResearch/test_dataset' 
-    test_images_path = os.path.join(test_dir,'numpy_images')
-    # test_masks_path = os.path.join(test_dir,'numpy_masks')
-    
-    # open images and masks 
-    preprocessed_image_files = glob(f'{test_images_path}/*.npy')
 
-    # get test data images and masks
+    test_dir = '/home/PyNasResearch/test_dataset' 
+    test_images_path = os.path.join(test_dir, 'numpy_images')
     preprocessed_image_files = glob(f'{test_images_path}/*.npy')
-    # preprocessed_mask_files = glob(f'{test_masks_path}/*.npy')
-    print('grabbed preprocessed images')
+    print('[INFO] Grabbed preprocessed images')
+
     image_tiles = []
     mask_tiles = []
     for pi in preprocessed_image_files:
-        pm = pi.replace('image','mask')
+        pm = pi.replace('image', 'mask')
         assert os.path.exists(pi) and os.path.exists(pm)
         image_tiles.append(np.load(pi))
         mask_tiles.append(np.load(pm))
-    print('loaded preprocessed images')
-    # run inference 
-    print('starting inference')
-    inf_start_time = time.time()
-    predicted_tiles = []
-    for tile in image_tiles:
-        # Convert the tile to a tensor and add batch dimension
-        tile_tensor = torch.tensor(tile).float().permute(2, 0, 1).unsqueeze(0).to(model_device)  
-        
-        # Model prediction
-        with torch.no_grad():
-            logits = model(tile_tensor)
-            # Apply softmax to get probabilities
-            # probabilities = F.softmax(logits, dim=1)
-            # Get the predicted class by using argmax
-            prediction = torch.argmax(logits, dim=1)  # Should result in shape [batch_size, height, width]
+    print('[INFO] Loaded images and masks')
 
-        # Remove the batch dimension and convert back to numpy
-        prediction = prediction.squeeze(0).to('cpu').numpy()
-        # Append the prediction to the list of predicted tiles
-        predicted_tiles.append(prediction)
-    print('ran predicitons')
+    logits_batch = []
+    targets_batch = []
+
+    print('[INFO] Starting inference')
+    inf_start_time = time.time()
+    for i, tile in enumerate(image_tiles):
+        tile_tensor = torch.tensor(tile).float().permute(2, 0, 1).unsqueeze(0).to(model_device)
+
+        with torch.no_grad():
+            logits = model(tile_tensor)  # [1, C, H, W]
+        logits_batch.append(logits.squeeze(0).cpu())  # [C, H, W]
+
+        mask = mask_tiles[i]  # [H, W, C]
+        mask_tensor = torch.argmax(torch.tensor(mask), dim=-1)  # [H, W]
+        targets_batch.append(mask_tensor)
+
     inf_end_time = time.time()
     inference_time = inf_end_time - inf_start_time
-    fps = len(preprocessed_image_files) / inference_time
-    print(f'fps {fps}')
-    try:
-        # calculate iou from the second here 
-        ious = []
-        print(mask_tiles[0].shape),mask_tiles[0].shape[-1]
-        num_classes = mask_tiles[0].shape[-1]  # Assuming the number of bands (or classes) is the number of dimensions in the prediction
-        print(num_classes)
-        print('calculating iou')
-        print(np.unique(predicted_tiles))
-        for i, pred in enumerate(predicted_tiles):
-            pred = pred.copy().astype(int)
-            mask = mask_tiles[i]
+    fps = len(image_tiles) / inference_time
+    print(f'[INFO] Inference complete. FPS: {fps:.2f}')
 
-            # Calculate IoU for each class
-            iou = []
-            print('here')
+    logits_tensor = torch.stack(logits_batch)   # [B, C, H, W]
+    targets_tensor = torch.stack(targets_batch) # [B, H, W]
+    num_classes = logits_tensor.shape[1]
+    mean_iou = calculate_iou(logits_tensor, targets_tensor, num_classes)
 
-            for cls in range(num_classes):
-                print(cls) 
-                pred_mask = (pred == cls)
-                target_mask = (mask[:,:,cls] == cls)
-                print(pred_mask.shape)
-                print(target_mask.shape)
-                print('making intersection and union')
-                intersection = np.logical_and(pred_mask, target_mask).sum()
-                union = np.logical_or(pred_mask, target_mask).sum()
-                print('this is the iou')
-                iou.append((intersection + 1e-6) / (union + 1e-6))
-            print('finished loop')   
-            mean_iou = np.array(iou).mean(axis=0)  # Mean IoU across all classes
-                
-            ious.append(mean_iou)
-    except:
-        print('failed to calculate this')
-    print('finished calculating iou')
-    # Calculate mean IoU across all classes and samples
-    ious = np.array(ious)  # Shape: (n_samples, n_classes)
-    mean_iou = np.nanmean(ious).astype(np.float32)
-    print(mean_iou)
-    result = {'accuracy':str(mean_iou), 'latency': str(fps)}
+    result = {'accuracy': str(mean_iou), 'latency': str(fps)}
     print(result)
-    
     return 0, result
+
 
 @app.post("/secure")
 async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(...)):
