@@ -250,7 +250,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
 
 @app.post("/secure")
-async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(...)):
+async def checkSecure(api_key: str, timeout: int, device: str, model_file: UploadFile = File(...)):
     '''
     Function to check if the API Token authtentication works.
     '''
@@ -262,7 +262,7 @@ async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(
         return random.random()  # return a random number
         pass
 
-    
+
     print(model_file.filename)
     model_path = UPLOAD_DIR / model_file.filename
     with open(model_path, "wb") as mf:
