@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from glob import glob 
 import time
+from typing import Optional
 
 # import torch
 # import torch.nn.functional as F
@@ -250,7 +251,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
 
 @app.post("/secure")
-async def checkSecure(api_key: str, timeout: int, device: str, model_file: UploadFile = File(...), model_bin: UploadFile | None = None):
+async def checkSecure(api_key: str, timeout: int, device: str, model_file: UploadFile = File(...), model_bin: Optional[UploadFile] = None):
     '''
     Function to check if the API Token authtentication works.
     '''
