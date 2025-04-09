@@ -10,8 +10,8 @@ from pathlib import Path
 from glob import glob 
 import time
 
-import torch
-import torch.nn.functional as F
+# import torch
+# import torch.nn.functional as F
 import numpy as np
 import asyncio
 
@@ -184,7 +184,7 @@ async def runInferenceOrin(model_path, device_type="orin"):
     return 0, result
     pass
 
-async def runInferenceMyriad(model_path, input_shape=(-1, 7,256,256)):
+async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 7,256,256)):
     '''
     Asynchronus function for running inference on Myriad X
 
@@ -262,6 +262,13 @@ async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(
         return random.random()  # return a random number
         pass
 
+    
+    print(model_file.filename)
+    model_path = UPLOAD_DIR / model_file.filename
+    with open(model_path, "wb") as mf:
+        mf.write(await model_file.read())
+        pass
+
     cache = {"result" : random.random()}
     try:
         result = await asyncio.wait_for(long_running_task(), timeout=timeout)  # timeout after five seconds of waiting
@@ -299,12 +306,20 @@ async def run_inference(
 
     try:
         # Save uploaded model file to 'uploaded_files'
+        print(model_file.filename)
         model_path = UPLOAD_DIR / model_file.filename
         with open(model_path, "wb") as mf:
             mf.write(await model_file.read())
 
         try:
-            result_returncode, result = await asyncio.wait_for(runInference(model_path=model_path, device_type=device), timeout=timeout)
+            if device == "orin":
+                result_returncode, result = await asyncio.wait_for(runInference(model_path=model_path, device_type=device), timeout=timeout)
+            elif device == "myriad":
+                result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)
+            else:
+                result_returncode = 1
+                result = "Incorrect device type provided"
+                pass
             print(result_returncode)
         except Exception as e:
             return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},
