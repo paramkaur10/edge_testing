@@ -3,7 +3,7 @@ import argparse
 import os
 import json
 
-def createRequest(config_filepath, device_type="orin", timeout_increase=2):
+def createRequest(config_filepath, timeout_increase=2):
     '''
     Function to read a configuration file containing the API endpoint, parameters to pass and receiving the response data.
 
@@ -28,6 +28,7 @@ def createRequest(config_filepath, device_type="orin", timeout_increase=2):
 
     api_endpoint = contents["url"]
     params = contents["params"]
+    device_type = params["device"]
     model_filepath = os.path.abspath(contents["model_filepath"])
     model_files = {"model_file" : (os.path.basename(model_filepath), open(model_filepath, "rb"))} 
 
