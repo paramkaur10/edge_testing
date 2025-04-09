@@ -43,9 +43,9 @@ def calculate_iou(logits, targets, num_classes):
         preds = torch.argmax(logits, dim=1)  # [B, H, W]
         ious = []
 
-        for cls in range(num_classes):
-            pred_mask = (preds == cls)
-            target_mask = (targets == cls)
+        for i in range(num_classes):
+            pred_mask = (preds == i)
+            target_mask = (targets == i)
 
             intersection = (pred_mask & target_mask).float().sum(dim=(1, 2))
             union = (pred_mask | target_mask).float().sum(dim=(1, 2))
@@ -56,9 +56,32 @@ def calculate_iou(logits, targets, num_classes):
         ious = torch.stack(ious, dim=0)  # [num_classes, B]
         mean_iou = ious.mean(dim=0).mean().item()
         return mean_iou
+        pass
+    pass
 
 
-def load_model(model_path: str,device_preference: str="GPU"):
+def calculateIOUNumpy(logits, targets, num_classes):
+
+    preds = numpy.argmax(logits, axis=1)
+    ious = []
+
+    for i in range(stop):
+        pred_mask = (pred == i)
+        target_mask = (targets == i)
+
+        intersection = (pred_mask & target_mask).sum(axis=(1,2))
+        union = (pred_mask | target_mask).sum(axis=(1,2))
+
+        iou = (intersection + 1e-6) / (union + 1e-6)
+        ious.append(iou)
+        pass
+
+    ious = np.stack(ious, axis=0)
+    mean_iou = np.mean(ious, axis=0)
+    return mean_iou
+    pass
+
+def load_modelOrin(model_path: str, device_preference: str="GPU"):
     assert os.path.exists(model_path)
     model = torch.load(model_path)
     model.eval()
@@ -87,9 +110,31 @@ def load_model(model_path: str,device_preference: str="GPU"):
         model_device = "cpu"
     return model, model_device
 
-async def runInference(model_path, device_preference="GPU"):
+def loadModelMyriad(model_path: str, device_preference: str="MYRIAD"):
+    '''
+    Function to load the model on the Myriad X
+    '''
+
+    assert os.path.exists(model_path), f"Model does not exist at {model_path}"
+
+    ie = Core()
+    model_ir = ie.read_model(model=model_path)
+    input_layer_ir = model_ir.input(0)
+
+    new_shape = (batch_size, image_size[1], image_size[2], image_size[3])
+
+    model_ir.reshape({input_layer_ir.any_name : new_shape})
+
+    compiled_model_ir = ie.compile_model(model=model_ir, device_name=device_preference)
+    output_layer_ir = compiled_model_ir.output(0)
+
+    return compiled_model_ir, output_layer_ir
+    pass
+
+async def runInferenceOrin(model_path, device_type="orin"):
     print("[INFO Model Loading] Loading the model")
-    model, model_device = load_model(model_path, device_preference)
+
+    model, model_device = load_modelOrin(model_path, device_preference="GPU")
 
     test_dir = '/home/PyNasResearch/test_dataset' 
     test_images_path = os.path.join(test_dir, 'numpy_images')
@@ -120,6 +165,7 @@ async def runInference(model_path, device_preference="GPU"):
         mask = mask_tiles[i]  # [H, W, C]
         mask_tensor = torch.argmax(torch.tensor(mask), dim=-1)  # [H, W]
         targets_batch.append(mask_tensor)
+        pass
 
     inf_end_time = time.time()
     inference_time = inf_end_time - inf_start_time
@@ -134,6 +180,69 @@ async def runInference(model_path, device_preference="GPU"):
     result = {'accuracy': str(mean_iou), 'latency': str(fps)}
     print(result)
     return 0, result
+    pass
+
+async def runInferenceMyriad(model_path, input_shape=(-1, 7,256,256)):
+    '''
+    Asynchronus function for running inference on Myriad X
+
+    Input Parameters:
+        1. model_path  => Path to the XML model
+        2. input_shape => Tuple of 4 elements; B, H, W, C
+
+    Outputs:
+    '''
+
+    print("[INFO Model Loading] Loading the model on the Myriad X")
+
+    compiled_model, output_layer = loadModelMyriad(model_path=model_path)
+
+    test_dir = '/home/PyNasResearch/test_dataset' 
+    test_images_path = os.path.join(test_dir, 'numpy_images')
+    preprocessed_image_files = glob(f'{test_images_path}/*.npy')
+    print('[INFO] Grabbed preprocessed images')
+
+    image_tiles = []
+    mask_tiles = []
+    for pi in preprocessed_image_files:
+        pm = pi.replace('image', 'mask')
+        assert os.path.exists(pi) and os.path.exists(pm)
+        image_tiles.append(np.load(pi))
+        mask_tiles.append(np.load(pm))
+        pass
+    print('[INFO] Loaded images and masks')
+
+    image_tensor = np.stack(image_tiles)
+    input_data = np.reshape(image_tensor, input_shape)
+
+    output_predictions = []
+    targets = []
+    print("[INFO] Starting Inference.")
+    inf_start_time = time.time()
+    for i in range(0, input_data.shape[0]):
+
+        batch_image = input_data[i]
+        print(batch_image.shape)
+        predictions = compiled_model([batch_image])[output_layer]
+
+        output_predictions.extend(predictions)
+
+        targets = np.argmax(mask_tiles[i], axis=-1)
+        pass
+
+    inf_end_time = time.time()
+
+    inference_time = inf_end_time - inf_start_time
+    fps = input_data.shape[0] / inference_time
+
+    print(f"[INFO] Inference Complete. FPS {fps:.2f}")
+
+    # Add IOU function here for MyriadX board.
+
+    result = {"accuracy" : str(0), "latency" : str(fps)}
+
+    return 0, result
+    pass
 
 
 @app.post("/secure")
@@ -168,8 +277,9 @@ async def checkSecure(api_key: str, timeout: int, model_file: UploadFile = File(
 async def run_inference(
     timeout: int,
     api_key: str,
-    model_file: UploadFile = File(...),
-):
+    device: str,
+    model_file: UploadFile = File(...)
+    ):
     """
     Uploads a model file, runs inference, calculates accuracy and speed metrics, and returns mean iou and fps.
 
@@ -190,7 +300,7 @@ async def run_inference(
             mf.write(await model_file.read())
 
         try:
-            result_returncode, result = await asyncio.wait_for(runInference(model_path=model_path), timeout=timeout)
+            result_returncode, result = await asyncio.wait_for(runInference(model_path=model_path, device_type=device), timeout=timeout)
             print(result_returncode)
         except Exception as e:
             return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},

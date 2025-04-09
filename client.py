@@ -3,7 +3,7 @@ import argparse
 import os
 import json
 
-def createRequest(config_filepath, timeout_increase=2):
+def createRequest(config_filepath, device_type="orin", timeout_increase=2):
     '''
     Function to read a configuration file containing the API endpoint, parameters to pass and receiving the response data.
 
@@ -31,6 +31,15 @@ def createRequest(config_filepath, timeout_increase=2):
     model_filepath = os.path.abspath(contents["model_filepath"])
     model_files = {"model_file" : (os.path.basename(model_filepath), open(model_filepath, "rb"))} 
 
+    if device_type == "orin":
+        model_files = [("model_file", (os.path.basename(model_filepath), open(model_filepath, "rb")))]
+    elif device_type == "myriad":
+        model_bin_filepath = os.path.splitext(model_filepath)[0] + ".bin"
+        model_files = [("model_file", (os.path.basename(model_filepath), open(model_filepath, "rb"))), ("model_file", (os.path.basename(model_bin_filepath), open(model_bin_filepath, "rb")))]
+    else:
+        print(f"[ERROR] Device type not supported. Current selection : {device_type}")
+        pass
+    
     while params["timeout"] <1200:
 
         response = requests.post(api_endpoint, params=params, files=model_files)
