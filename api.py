@@ -15,6 +15,8 @@ import torch.nn.functional as F
 import numpy as np
 import asyncio
 
+from openvino.runtime import Core
+
 from auth import get_user
 
 app = FastAPI()
@@ -227,7 +229,7 @@ async def runInferenceMyriad(model_path, input_shape=(-1, 7,256,256)):
 
         output_predictions.extend(predictions)
 
-        targets = np.argmax(mask_tiles[i], axis=-1)
+        targets.append(np.argmax(mask_tiles[i], axis=-1))
         pass
 
     inf_end_time = time.time()
@@ -238,7 +240,9 @@ async def runInferenceMyriad(model_path, input_shape=(-1, 7,256,256)):
     print(f"[INFO] Inference Complete. FPS {fps:.2f}")
 
     # Add IOU function here for MyriadX board.
-
+    output_predictions = np.stack(output_predictions)
+    targets = np.stack(targets)
+    mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_data.shape[1])
     result = {"accuracy" : str(0), "latency" : str(fps)}
 
     return 0, result
