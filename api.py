@@ -300,7 +300,8 @@ async def run_inference(
     timeout: int,
     api_key: str,
     device: str,
-    model_file: UploadFile = File(...)
+    model_file: UploadFile = File(...),
+    model_bin: Optional[UploadFile] = None
     ):
     """
     Uploads a model file, runs inference, calculates accuracy and speed metrics, and returns mean iou and fps.
@@ -321,7 +322,15 @@ async def run_inference(
         model_path = UPLOAD_DIR / model_file.filename
         with open(model_path, "wb") as mf:
             mf.write(await model_file.read())
+            pass
 
+        if model_bin:
+            model_bin_path = UPLOAD_DIR / model_bin.filename
+            with open(model_bin_path, "wb") as mf:
+                mf.write(await model_bin.read())
+                pass
+            pass
+        
         try:
             if device == "orin":
                 result_returncode, result = await asyncio.wait_for(runInference(model_path=model_path, device_type=device), timeout=timeout)
