@@ -276,10 +276,10 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
     if model_bin:
         model_bin_path = UPLOAD_DIR/ model_bin.filename
         with open(model_bin_path, "wb") as mf:
-            mf.write(await model_bin_path.read())
+            mf.write(await model_bin.read())
             pass
         pass
-    
+
     cache = {"result" : random.random()}
     try:
         result = await asyncio.wait_for(long_running_task(), timeout=timeout)  # timeout after five seconds of waiting
