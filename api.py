@@ -262,7 +262,7 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         return random.random()  # return a random number
         pass
 
-
+    print(model_file)
     print(model_file.filename)
     model_path = UPLOAD_DIR / model_file.filename
     with open(model_path, "wb") as mf:
