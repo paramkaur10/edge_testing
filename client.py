@@ -36,7 +36,8 @@ def createRequest(config_filepath, timeout_increase=2):
         model_files = [("model_file", (os.path.basename(model_filepath), open(model_filepath, "rb")))]
     elif device_type == "myriad":
         model_bin_filepath = os.path.splitext(model_filepath)[0] + ".bin"
-        model_files = [("model_file", (os.path.basename(model_filepath), open(model_filepath, "rb"))), ("model_file", (os.path.basename(model_bin_filepath), open(model_bin_filepath, "rb")))]
+        # model_files = [("model_file", (os.path.basename(model_filepath), open(model_filepath, "rb"))), ("model_file", (os.path.basename(model_bin_filepath), open(model_bin_filepath, "rb")))]
+        model_files = {"model_file" : (os.path.basename(model_filepath), open(model_filepath, "rb")), "model_bin" : (os.path.basename(model_bin_filepath), open(model_bin_filepath, "rb"))}
     else:
         print(f"[ERROR] Device type not supported. Current selection : {device_type}")
         pass
