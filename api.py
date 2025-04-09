@@ -252,7 +252,8 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
 # , model_bin: Optional[UploadFile] = None
 @app.post("/secure")
-async def checkSecure(api_key: str, timeout: int, device: str, model_file: UploadFile = File(...)):
+async def checkSecure(api_key: str, timeout: int, device: str, model_file: UploadFile = File(...), 
+                      model_bin: Optional[UploadFile] = None):
     '''
     Function to check if the API Token authtentication works.
     '''
@@ -272,6 +273,13 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         mf.write(await model_file.read())
         pass
 
+    if model_bin:
+        model_bin_path = UPLOAD_DIR/ model_bin.filename
+        with open(model_bin_path, "wb") as mf:
+            mf.write(await model_bin_path.read())
+            pass
+        pass
+    
     cache = {"result" : random.random()}
     try:
         result = await asyncio.wait_for(long_running_task(), timeout=timeout)  # timeout after five seconds of waiting
