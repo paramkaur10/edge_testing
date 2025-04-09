@@ -39,9 +39,9 @@ def createRequest(config_filepath, device_type="orin", timeout_increase=2):
     else:
         print(f"[ERROR] Device type not supported. Current selection : {device_type}")
         pass
-    
-    while params["timeout"] <1200:
 
+    while params["timeout"] <1200:
+        print(model_files)
         response = requests.post(api_endpoint, params=params, files=model_files)
 
         if response.status_code == 401:
