@@ -191,7 +191,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
     Input Parameters:
         1. model_path  => Path to the XML model
-        2. input_shape => Tuple of 4 elements; B, H, W, C
+        2. input_shape => Tuple of 4 elements; B, H, W, C . TO BE CHANGED BY THE PYNAS TEAM.
 
     Outputs:
     '''
@@ -333,7 +333,7 @@ async def run_inference(
         
         try:
             if device == "orin":
-                result_returncode, result = await asyncio.wait_for(runInference(model_path=model_path, device_type=device), timeout=timeout)
+                result_returncode, result = await asyncio.wait_for(runInferenceOrin(model_path=model_path, device_type=device), timeout=timeout)
             elif device == "myriad":
                 result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)
             else:
