@@ -11,6 +11,7 @@ from glob import glob
 import time
 from typing import Optional
 import xml.etree.ElementTree as ET
+import requests
 
 # import torch
 # import torch.nn.functional as F
@@ -310,7 +311,7 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         response = {"error" : "Timeout", "Current timeout value" : timeout}
         status = 504
     except Exception as e:
-        response = {"error" : "An error has occured", "Current timeout value" : timeout, "Error" : e}
+        response = {"error" : "An error has occured", "Current timeout value" : timeout, "Error" : str(e)}
         status = 500
         pass
 
@@ -318,6 +319,8 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
     # response = {"message" : result}
     # status = 200
     # print(response)
+
+    print(response)
     return JSONResponse(content=response, status_code=status)
     pass
 
