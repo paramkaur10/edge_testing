@@ -66,7 +66,7 @@ def calculate_iou(logits, targets, num_classes):
 
 def calculateIOUNumpy(logits, targets, num_classes):
 
-    preds = numpy.argmax(logits, axis=1)
+    preds = np.argmax(logits, axis=1)
     ious = []
 
     for i in range(stop):
@@ -249,8 +249,8 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     output_predictions = np.stack(output_predictions)
     targets = np.stack(targets)
     mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_data.shape[1])
-    result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
-    # result = {"accuracy" : str(0), "latency" : str(10)}
+    # result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
+    result = {"accuracy" : str(0), "latency" : str(10)}
 
     return 0, result
     pass
