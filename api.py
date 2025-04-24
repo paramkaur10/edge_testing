@@ -70,7 +70,7 @@ def calculateIOUNumpy(logits, targets, num_classes):
     ious = []
 
     for i in range(num_classes):
-        pred_mask = (pred == i)
+        pred_mask = (preds == i)
         target_mask = (targets == i)
 
         intersection = (pred_mask & target_mask).sum(axis=(1,2))
