@@ -124,10 +124,14 @@ def loadModelMyriad(model_path: str, batch_size=1, input_shape=(7,256,256), devi
     ie = Core()
     model_ir = ie.read_model(model=model_path)
     input_layer_ir = model_ir.input(0)
-
+    print(input_layer_ir.shape)
+    
     new_shape = (batch_size, input_shape[0], input_shape[1], input_shape[2])
 
     model_ir.reshape({input_layer_ir.any_name : new_shape})
+
+    input_layer_ir = model_ir.input(0)
+    print(input_layer.shape)
 
     compiled_model_ir = ie.compile_model(model=model_ir, device_name=device_preference)
     output_layer_ir = compiled_model_ir.output(0)
@@ -225,7 +229,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     inf_start_time = time.time()
     for i in range(0, input_data.shape[0]):
 
-        batch_image = input_data[i]
+        batch_image = np..expand_dims(input_data[i], axis=-1)
         print(batch_image.shape)
         predictions = compiled_model([batch_image])[output_layer]
 
