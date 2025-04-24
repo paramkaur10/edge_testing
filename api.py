@@ -307,13 +307,14 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         response = {"message": result, "cache": False}
         status = 200
         return response
-    except TimeoutError as e:
+    except Exception as e:
+        print(e)
         response = {"error" : "Timeout", "Current timeout value" : timeout}
         status = 504
-    except Exception as e:
-        response = {"error" : "An error has occured", "Current timeout value" : timeout, "Error" : str(e)}
-        status = 500
-        pass
+    # except Exception as e:
+    #     response = {"error" : "An error has occured", "Current timeout value" : timeout, "Error" : str(e)}
+    #     status = 500
+    #     pass
 
     # result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
     # response = {"message" : result}
