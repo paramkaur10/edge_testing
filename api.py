@@ -248,7 +248,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     # Add IOU function here for MyriadX board.
     output_predictions = np.stack(output_predictions)
     targets = np.stack(targets)
-    # mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_data.shape[1])
+    mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_data.shape[1])
     # result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
     result = {"accuracy" : str(0), "latency" : str(10)}
 
@@ -300,19 +300,24 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         pass
 
     cache = {"result" : random.random()}
-    # try:
-    #     result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
-    #     cache["result"] = result  # cache the result
-    #     response = {"message": result, "cache": False}
-    #     status = 200
-    #     return response
-    # except Exception as e:
-    #     response = {"error" : "A timeout error occured", "timeout" : timeout}
-    #     status = 504
-    #     pass
+    try:
+        result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
+        cache["result"] = result  # cache the result
+        response = {"message": result, "cache": False}
+        status = 200
+        return response
+    except TimeoutError as e:
+        response = {"error" : "Timeout", "Current timeout value" : timeout}
+        status = 504
+    except Exception as e:
+        response = {"error" : "An error has occured", "Current timeout value" : timeout, "Error" : e}
+        status = 500
+        pass
 
-    result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
-    response = {"message" : result}
+    # result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
+    # response = {"message" : result}
+    # status = 200
+    # print(response)
     return JSONResponse(content=response, status_code=status)
     pass
 
@@ -342,7 +347,7 @@ async def run_inference(
         print(model_file.filename)
         model_path = UPLOAD_DIR / model_file.filename
 
-        if device=="myriad":
+        if device=="myriad" and not os.path.exists(model_path):
             xml_content = await model_file.read()
             root = ET.fromstring(xml_content)
             # image_element = ET.SubElement(root, 'image')
@@ -351,6 +356,7 @@ async def run_inference(
             with open(model_path, "wb") as mf:
                 tree.write(mf, encoding='utf-8', xml_declaration=True)
                 pass
+            pass
         else:
             with open(model_path, "wb") as mf:
                 mf.write(await model_file.read())
@@ -374,9 +380,11 @@ async def run_inference(
                 result = "Incorrect device type provided"
                 pass
             print(result_returncode)
+        except TimeoutError as e:
+            return JSONResponce(content={"error" : "A timeout has occured", "details" : f"Timeout at {timeout} seconds"}, status=504)
         except Exception as e:
-            return JSONResponse(content={"error": "Timeout error", "details" : f"Timed out at {timeout} seconds"},
-                                status_code=504)
+            return JSONResponse(content={"error": "An Error has occured", "details" : str(e)}, status_code=500)
+            pass
 
         # Check if execution failed
         if result_returncode != 0:
