@@ -132,7 +132,7 @@ def loadModelMyriad(model_path: str, batch_size=1, input_shape=(7,256,256), devi
     compiled_model_ir = ie.compile_model(model=model_ir, device_name=device_preference)
     output_layer_ir = compiled_model_ir.output(0)
 
-    return 0, "Hello world"
+    return compiled_model, output_layer_ir
     pass
 
 async def runInferenceOrin(model_path, device_type="orin"):
