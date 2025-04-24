@@ -275,15 +275,17 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
     model_path = UPLOAD_DIR / model_file.filename
 
     if device=="myriad":
+        if not os.path.exists(model_path):
+            xml_content = await model_file.read()
+            root = ET.fromstring(xml_content)
+            # image_element = ET.SubElement(root, 'image')
+            tree = ET.ElementTree(root)
 
-        xml_content = await model_file.read()
-        root = ET.fromstring(xml_content)
-        # image_element = ET.SubElement(root, 'image')
-        tree = ET.ElementTree(root)
-
-        with open(model_path, "wb") as mf:
-            tree.write(mf, encoding='utf-8', xml_declaration=True)
+            with open(model_path, "wb") as mf:
+                tree.write(mf, encoding='utf-8', xml_declaration=True)
+                pass
             pass
+        pass
 
     if model_bin:
         print(model_bin)
@@ -335,8 +337,20 @@ async def run_inference(
         # Save uploaded model file to 'uploaded_files'
         print(model_file.filename)
         model_path = UPLOAD_DIR / model_file.filename
-        with open(model_path, "wb") as mf:
-            mf.write(await model_file.read())
+
+        if device=="myriad":
+            xml_content = await model_file.read()
+            root = ET.fromstring(xml_content)
+            # image_element = ET.SubElement(root, 'image')
+            tree = ET.ElementTree(root)
+
+            with open(model_path, "wb") as mf:
+                tree.write(mf, encoding='utf-8', xml_declaration=True)
+                pass
+        else:
+            with open(model_path, "wb") as mf:
+                mf.write(await model_file.read())
+                pass
             pass
 
         if model_bin:
