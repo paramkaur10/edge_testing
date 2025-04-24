@@ -296,19 +296,19 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         pass
 
     cache = {"result" : random.random()}
-    try:
-        result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
-        cache["result"] = result  # cache the result
-        response = {"message": result, "cache": False}
-        status = 200
-        return response
-    except Exception as e:
-        response = {"error" : "A timeout error occured", "timeout" : timeout}
-        status = 504
-        pass
+    # try:
+    #     result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
+    #     cache["result"] = result  # cache the result
+    #     response = {"message": result, "cache": False}
+    #     status = 200
+    #     return response
+    # except Exception as e:
+    #     response = {"error" : "A timeout error occured", "timeout" : timeout}
+    #     status = 504
+    #     pass
 
-    # result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
-    # response = {"message" : "Hello World"}
+    result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
+    response = {"message" : result}
     return JSONResponse(content=response, status_code=status)
     pass
 
