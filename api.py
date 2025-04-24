@@ -10,6 +10,7 @@ from pathlib import Path
 from glob import glob 
 import time
 from typing import Optional
+import xml.etree.ElementTree as ET
 
 # import torch
 # import torch.nn.functional as F
@@ -269,9 +270,17 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
     # print(model_file.filename)
     # print(model_bin)
     model_path = UPLOAD_DIR / model_file.filename
-    with open(model_path, "wb") as mf:
-        mf.write(await model_file.read())
-        pass
+
+    if device=="myriad":
+
+        xml_content = await file.read()
+        root = ET.fromstring(xml_content)
+        print("a")
+        print(root)
+
+        with open(model_path, "wb") as mf:
+            mf.write(await model_file.read())
+            pass
 
     if model_bin:
         model_bin_path = UPLOAD_DIR/ model_bin.filename
