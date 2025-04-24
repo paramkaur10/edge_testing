@@ -69,7 +69,7 @@ def calculateIOUNumpy(logits, targets, num_classes):
     preds = np.argmax(logits, axis=1)
     ious = []
 
-    for i in range(stop):
+    for i in range(num_classes):
         pred_mask = (pred == i)
         target_mask = (targets == i)
 
