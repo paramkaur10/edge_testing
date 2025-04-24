@@ -229,7 +229,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     inf_start_time = time.time()
     for i in range(0, input_data.shape[0]):
 
-        batch_image = np.expand_dims(input_data[i], axis=-1)
+        batch_image = np.expand_dims(input_data[i], axis=0)
         print(batch_image.shape)
         predictions = compiled_model([batch_image])[output_layer]
 
