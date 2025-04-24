@@ -114,7 +114,7 @@ def load_modelOrin(model_path: str, device_preference: str="GPU"):
         model_device = "cpu"
     return model, model_device
 
-def loadModelMyriad(model_path: str, device_preference: str="MYRIAD"):
+async def loadModelMyriad(model_path: str, batch_size=1, device_preference: str="MYRIAD"):
     '''
     Function to load the model on the Myriad X
     '''
@@ -293,20 +293,17 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         pass
 
     cache = {"result" : random.random()}
-    # try:
-    #     result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  # timeout after five seconds of waiting
-    #     cache["result"] = result  # cache the result
-    #     response = {"message": result, "cache": False}
-    #     status = 200
-    #     return response
-    # except Exception as e:
-    #     response = {"error" : "A timeout error occured", "timeout" : timeout}
-    #     status = 504
-    #     pass
+    try:
+        result = await asyncio.wait_for(loadModelMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
+        cache["result"] = result  # cache the result
+        response = {"message": result, "cache": False}
+        status = 200
+        return response
+    except Exception as e:
+        response = {"error" : "A timeout error occured", "timeout" : timeout}
+        status = 504
+        pass
 
-    result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  # timeout after five seconds of waiting
-    response = {"message" : "Something ran"}
-    statues = 200
     return JSONResponse(content=response, status_code=status)
     pass
 
