@@ -282,7 +282,7 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
 
     cache = {"result" : random.random()}
     try:
-        result = await asyncio.wait_for(long_running_task(), timeout=timeout)  # timeout after five seconds of waiting
+        result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  # timeout after five seconds of waiting
         cache["result"] = result  # cache the result
         response = {"message": result, "cache": False}
         status = 200
