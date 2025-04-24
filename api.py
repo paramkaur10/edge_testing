@@ -273,7 +273,7 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
 
     if device=="myriad":
 
-        xml_content = await file.read()
+        xml_content = await model_file.read()
         root = ET.fromstring(xml_content)
         print("a")
         print(root)
