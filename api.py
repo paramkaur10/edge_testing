@@ -114,7 +114,7 @@ def load_modelOrin(model_path: str, device_preference: str="GPU"):
         model_device = "cpu"
     return model, model_device
 
-async def loadModelMyriad(model_path: str, batch_size=1, device_preference: str="MYRIAD"):
+async def loadModelMyriad(model_path: str, batch_size=1, input_shape=(7,256,256), device_preference: str="MYRIAD"):
     '''
     Function to load the model on the Myriad X
     '''
@@ -125,7 +125,7 @@ async def loadModelMyriad(model_path: str, batch_size=1, device_preference: str=
     model_ir = ie.read_model(model=model_path)
     input_layer_ir = model_ir.input(0)
 
-    new_shape = (batch_size, image_size[1], image_size[2], image_size[3])
+    new_shape = (batch_size, input_shape[0], input_shape[1], input_shape[2])
 
     model_ir.reshape({input_layer_ir.any_name : new_shape})
 
@@ -293,17 +293,19 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         pass
 
     cache = {"result" : random.random()}
-    try:
-        result = await asyncio.wait_for(long_running_task(), timeout=timeout)  # timeout after five seconds of waiting
-        cache["result"] = result  # cache the result
-        response = {"message": result, "cache": False}
-        status = 200
-        return response
-    except Exception as e:
-        response = {"error" : "A timeout error occured", "timeout" : timeout}
-        status = 504
-        pass
+    # try:
+    #     result_returncode, result = await asyncio.wait_for(loadModelMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
+    #     cache["result"] = result  # cache the result
+    #     response = {"message": result, "cache": False}
+    #     status = 200
+    #     return response
+    # except Exception as e:
+    #     response = {"error" : "A timeout error occured", "timeout" : timeout}
+    #     status = 504
+    #     pass
 
+    result_returncode, result = await asyncio.wait_for(loadModelMyriad(model_path=model_path), timeout=timeout)  
+    response = {"message" : "Hello World"}
     return JSONResponse(content=response, status_code=status)
     pass
 
