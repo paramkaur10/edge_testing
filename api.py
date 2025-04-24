@@ -208,7 +208,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
     image_tiles = []
     mask_tiles = []
-    for pi in preprocessed_image_files:
+    for pi in preprocessed_image_files[:1]:
         pm = pi.replace('image', 'mask')
         assert os.path.exists(pi) and os.path.exists(pm)
         image_tiles.append(np.load(pi))
@@ -245,7 +245,8 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     output_predictions = np.stack(output_predictions)
     targets = np.stack(targets)
     mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_data.shape[1])
-    result = {"accuracy" : str(0), "latency" : str(fps)}
+    result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
+    # result = {"accuracy" : str(0), "latency" : str(10)}
 
     return 0, result
     pass
@@ -294,7 +295,7 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
 
     cache = {"result" : random.random()}
     # try:
-    #     result_returncode, result = await asyncio.wait_for(loadModelMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
+    #     result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
     #     cache["result"] = result  # cache the result
     #     response = {"message": result, "cache": False}
     #     status = 200
