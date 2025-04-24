@@ -130,7 +130,7 @@ def loadModelMyriad(model_path: str, batch_size=1, input_shape=(7,256,256), devi
 
     model_ir.reshape({input_layer_ir.any_name : new_shape})
 
-    input_layer_ir = model_ir.input(0)
+    input_layer = model_ir.input(0)
     print(input_layer.shape)
 
     compiled_model_ir = ie.compile_model(model=model_ir, device_name=device_preference)
