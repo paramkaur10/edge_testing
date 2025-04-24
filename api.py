@@ -114,7 +114,7 @@ def load_modelOrin(model_path: str, device_preference: str="GPU"):
         model_device = "cpu"
     return model, model_device
 
-async def loadModelMyriad(model_path: str, batch_size=1, input_shape=(7,256,256), device_preference: str="MYRIAD"):
+def loadModelMyriad(model_path: str, batch_size=1, input_shape=(7,256,256), device_preference: str="MYRIAD"):
     '''
     Function to load the model on the Myriad X
     '''
@@ -304,7 +304,7 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
     #     status = 504
     #     pass
 
-    result_returncode, result = await asyncio.wait_for(loadModelMyriad(model_path=model_path), timeout=timeout)  
+    result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
     response = {"message" : "Hello World"}
     return JSONResponse(content=response, status_code=status)
     pass
