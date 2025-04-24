@@ -132,7 +132,7 @@ def loadModelMyriad(model_path: str, batch_size=1, input_shape=(7,256,256), devi
     compiled_model_ir = ie.compile_model(model=model_ir, device_name=device_preference)
     output_layer_ir = compiled_model_ir.output(0)
 
-    return compiled_model, output_layer_ir
+    return compiled_model_ir, output_layer_ir
     pass
 
 async def runInferenceOrin(model_path, device_type="orin"):
@@ -294,19 +294,19 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
         pass
 
     cache = {"result" : random.random()}
-    # try:
-    #     result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
-    #     cache["result"] = result  # cache the result
-    #     response = {"message": result, "cache": False}
-    #     status = 200
-    #     return response
-    # except Exception as e:
-    #     response = {"error" : "A timeout error occured", "timeout" : timeout}
-    #     status = 504
-    #     pass
+    try:
+        result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path), timeout=timeout)  # timeout after five seconds of waiting
+        cache["result"] = result  # cache the result
+        response = {"message": result, "cache": False}
+        status = 200
+        return response
+    except Exception as e:
+        response = {"error" : "A timeout error occured", "timeout" : timeout}
+        status = 504
+        pass
 
-    result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
-    response = {"message" : "Hello World"}
+    # result_returncode, result = await asyncio.wait_for(runInferenceMyriad(model_path=model_path, device_type=device), timeout=timeout)  
+    # response = {"message" : "Hello World"}
     return JSONResponse(content=response, status_code=status)
     pass
 
