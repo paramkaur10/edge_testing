@@ -277,11 +277,11 @@ async def checkSecure(api_key: str, timeout: int, device: str, model_file: Uploa
 
         xml_content = await model_file.read()
         root = ET.fromstring(xml_content)
-        print("a")
-        print(root)
+        # image_element = ET.SubElement(root, 'image')
+        tree = ET.ElementTree(root)
 
         with open(model_path, "wb") as mf:
-            mf.write(await model_file.read())
+            tree.write(mf, encoding='utf-8', xml_declaration=True)
             pass
 
     if model_bin:
