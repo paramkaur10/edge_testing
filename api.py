@@ -215,7 +215,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     output_predictions = []
     targets = []
 
-    for i, pi in enumerate(preprocessed_image_files):
+    for i, pi in enumerate(preprocessed_image_files[:10]):
         pm = pi.replace('image', 'mask')
         assert os.path.exists(pi) and os.path.exists(pm)
         image_tile = np.load(pi)
@@ -231,6 +231,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
         inf_start_time = time.time()
 
         prediction = compiled_model([input_data])[output_layer]
+        print('>>',prediction.shape)
         output_predictions.extend(prediction)
         targets.append(np.argmax(mask_tile, axis=-1))
         inf_end_time = time.time()
@@ -244,6 +245,8 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
     # Add IOU function here for MyriadX board.
     output_predictions = np.stack(output_predictions)
+    print(output_predictions.shape)
+
     targets = np.stack(targets)
     mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_shape[1])
     result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
