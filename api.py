@@ -211,57 +211,44 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     preprocessed_image_files = glob(f'{test_images_path}/*.npy')
     print('[INFO] Grabbed preprocessed images')
 
-    image_tiles = []
-    mask_tiles = []
-
-    inference_total_times = 0
+    inference_total_time = 0
+    output_predictions = []
+    targets = []
 
     for i, pi in enumerate(preprocessed_image_files):
         pm = pi.replace('image', 'mask')
         assert os.path.exists(pi) and os.path.exists(pm)
-        image_tiles.append(np.load(pi))
-        mask_tiles.append(np.load(pm))
+        image_tile = np.load(pi)
+        mask_tile = np.load(pm)
         
-
         print('[INFO] Loading images and masks')
-
-        image_tensor = np.stack(image_tiles)
-        input_data = np.reshape(image_tensor, input_shape)
-
-        output_predictions = []
-        targets = []
+        input_data = np.reshape(image_tile, input_shape)
+        print(image_tile.shape)
+        print(input_shape)
+        print(input_data.shape)
+        
         print("[INFO] Starting Inference.")
         inf_start_time = time.time()
-        for i in range(0, input_data.shape[0]):
 
-            batch_image = np.expand_dims(input_data[i], axis=0)
-            print(batch_image.shape)
-            predictions = compiled_model([batch_image])[output_layer]
-
-            output_predictions.extend(predictions)
-
-            targets.append(np.argmax(mask_tiles[i], axis=-1))
-            pass
-
+        prediction = compiled_model([input_data])[output_layer]
+        output_predictions.extend(prediction)
+        targets.append(np.argmax(mask_tile, axis=-1))
         inf_end_time = time.time()
-
+        
         inference_time = inf_end_time - inf_start_time
         inference_total_time += inference_time
-        pass
 
-    fps = input_data.shape[0] / inference_time
+    fps = len(preprocessed_image_files) / inference_total_time
 
     print(f"[INFO] Inference Complete. FPS {fps:.2f}")
 
     # Add IOU function here for MyriadX board.
     output_predictions = np.stack(output_predictions)
     targets = np.stack(targets)
-    mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_data.shape[1])
+    mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_shape[1])
     result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
-    # result = {"accuracy" : str(0), "latency" : str(10)}
 
     return 0, result
-    pass
 
 
 # , model_bin: Optional[UploadFile] = None
