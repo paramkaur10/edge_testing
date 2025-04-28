@@ -68,6 +68,7 @@ def calculate_iou(logits, targets, num_classes):
 def calculateIOUNumpy(logits, targets, num_classes):
 
     preds = np.argmax(logits, axis=1)
+    print(preds.shape)
     ious = []
 
     for i in range(num_classes):
@@ -83,6 +84,11 @@ def calculateIOUNumpy(logits, targets, num_classes):
 
     ious = np.stack(ious, axis=0)
     mean_iou = np.mean(ious, axis=0)
+    print(ious)
+    print(mean_iou)
+    print(ious.shape)
+    print(mean_iou.shape)
+
     return mean_iou
     pass
 
