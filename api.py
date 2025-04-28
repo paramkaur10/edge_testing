@@ -213,35 +213,42 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
     image_tiles = []
     mask_tiles = []
-    for pi in preprocessed_image_files[:1]:
+
+    inference_total_times = 0
+
+    for i, pi in enumerate(preprocessed_image_files):
         pm = pi.replace('image', 'mask')
         assert os.path.exists(pi) and os.path.exists(pm)
         image_tiles.append(np.load(pi))
         mask_tiles.append(np.load(pm))
+        
+
+        print('[INFO] Loading images and masks')
+
+        image_tensor = np.stack(image_tiles)
+        input_data = np.reshape(image_tensor, input_shape)
+
+        output_predictions = []
+        targets = []
+        print("[INFO] Starting Inference.")
+        inf_start_time = time.time()
+        for i in range(0, input_data.shape[0]):
+
+            batch_image = np.expand_dims(input_data[i], axis=0)
+            print(batch_image.shape)
+            predictions = compiled_model([batch_image])[output_layer]
+
+            output_predictions.extend(predictions)
+
+            targets.append(np.argmax(mask_tiles[i], axis=-1))
+            pass
+
+        inf_end_time = time.time()
+
+        inference_time = inf_end_time - inf_start_time
+        inference_total_time += inference_time
         pass
-    print('[INFO] Loaded images and masks')
 
-    image_tensor = np.stack(image_tiles)
-    input_data = np.reshape(image_tensor, input_shape)
-
-    output_predictions = []
-    targets = []
-    print("[INFO] Starting Inference.")
-    inf_start_time = time.time()
-    for i in range(0, input_data.shape[0]):
-
-        batch_image = np.expand_dims(input_data[i], axis=0)
-        print(batch_image.shape)
-        predictions = compiled_model([batch_image])[output_layer]
-
-        output_predictions.extend(predictions)
-
-        targets.append(np.argmax(mask_tiles[i], axis=-1))
-        pass
-
-    inf_end_time = time.time()
-
-    inference_time = inf_end_time - inf_start_time
     fps = input_data.shape[0] / inference_time
 
     print(f"[INFO] Inference Complete. FPS {fps:.2f}")
