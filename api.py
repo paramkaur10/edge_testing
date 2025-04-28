@@ -221,7 +221,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
         image_tile = np.load(pi)
         mask_tile = np.load(pm)
         
-        print('[INFO] Loading images and masks')
+        print(f'[INFO] Loading images and masks {i/len(preprocessed_image_files)*100}')
         input_data = np.reshape(image_tile, input_shape)
         print(image_tile.shape)
         print(input_shape)
