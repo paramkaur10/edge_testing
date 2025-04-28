@@ -65,10 +65,7 @@ def calculate_iou(logits, targets, num_classes):
 
 
 def calculateIOUNumpy(logits, targets, num_classes):
-
     preds = np.argmax(logits, axis=1)
-    print(preds.shape) #10 256 256
-    print(targets.shape)
     ious = []
 
     for i in range(num_classes):
@@ -80,17 +77,11 @@ def calculateIOUNumpy(logits, targets, num_classes):
 
         iou = (intersection + 1e-6) / (union + 1e-6)
         ious.append(iou)
-        pass
 
     ious = np.stack(ious, axis=0)
     mean_iou = np.mean(ious, axis=0).mean()
-    print(ious) #4 10
-    print(mean_iou)
-    print(ious.shape)
-    print(mean_iou.shape)
 
     return mean_iou
-    pass
 
 def load_modelOrin(model_path: str, device_preference: str="GPU"):
     assert os.path.exists(model_path)
@@ -221,7 +212,7 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
     output_predictions = []
     targets = []
 
-    for i, pi in enumerate(preprocessed_image_files[:10]):
+    for i, pi in enumerate(preprocessed_image_files):
         pm = pi.replace('image', 'mask')
         assert os.path.exists(pi) and os.path.exists(pm)
         image_tile = np.load(pi)
@@ -229,15 +220,11 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
         
         print(f'[INFO] Loading images and masks {i/len(preprocessed_image_files)*100}')
         input_data = np.reshape(image_tile, input_shape)
-        print(image_tile.shape)
-        print(input_shape)
-        print(input_data.shape)
         
         print("[INFO] Starting Inference.")
         inf_start_time = time.time()
 
         prediction = compiled_model([input_data])[output_layer]
-        print('>>',prediction.shape)
         output_predictions.extend(prediction)
         targets.append(np.argmax(mask_tile, axis=-1))
         inf_end_time = time.time()
@@ -251,10 +238,8 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
     # Add IOU function here for MyriadX board.
     output_predictions = np.stack(output_predictions)
-    print(output_predictions.shape) #10 4 256 256
 
     targets = np.stack(targets)
-    print(targets.shape) #10 256 256
     mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_shape[1])
     result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
 
