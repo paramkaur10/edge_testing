@@ -61,14 +61,14 @@ def calculate_iou(logits, targets, num_classes):
         ious = torch.stack(ious, dim=0)  # [num_classes, B]
         mean_iou = ious.mean(dim=0).mean().item()
         return mean_iou
-        pass
-    pass
+
 
 
 def calculateIOUNumpy(logits, targets, num_classes):
 
     preds = np.argmax(logits, axis=1)
-    print(preds.shape)
+    print(preds.shape) #10 256 256
+    print(targets.shape)
     ious = []
 
     for i in range(num_classes):
@@ -83,8 +83,8 @@ def calculateIOUNumpy(logits, targets, num_classes):
         pass
 
     ious = np.stack(ious, axis=0)
-    mean_iou = np.mean(ious, axis=0)
-    print(ious)
+    mean_iou = np.mean(ious, axis=0).mean()
+    print(ious) #4 10
     print(mean_iou)
     print(ious.shape)
     print(mean_iou.shape)
@@ -251,9 +251,10 @@ async def runInferenceMyriad(model_path, device_type="myriad", input_shape=(-1, 
 
     # Add IOU function here for MyriadX board.
     output_predictions = np.stack(output_predictions)
-    print(output_predictions.shape)
+    print(output_predictions.shape) #10 4 256 256
 
     targets = np.stack(targets)
+    print(targets.shape) #10 256 256
     mean_iou = calculateIOUNumpy(logits=output_predictions, targets=targets, num_classes=input_shape[1])
     result = {"accuracy" : str(mean_iou), "latency" : str(fps)}
 
